@@ -113,7 +113,7 @@ class abc :
         self.closed    = False
         self.file.write ('X: 1\nT: %s\nM: 4/4\nL: 1/8\n' % self.title)
         self.file.write ('Q: 1/8=%d\nK: C\n' % (self.wpm * bpm_wpm * steps_bpm))
-        self.file.write ("%%MIDI program %s\n" % self.midi)
+        self.file.write ("%%%%MIDI program %s\n" % self.midi)
     # end def __init__
 
     def update (self, str) :
