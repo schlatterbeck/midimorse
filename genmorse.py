@@ -96,7 +96,7 @@ class abc :
         self.wpm       = wpm
         self.title     = title
         self.pause     = 5
-        self.count     = 0
+        self.tcount    = 0
         self.takt      = 8 # M: 4/4
         self.taktcount = 0
         self.closed    = False
@@ -111,13 +111,9 @@ class abc :
                 self.pause = 5
             if code.has_key (i) : 
                 self._output_char (code [i])
-                self.count += 1
     # end def update
 
     def _output_char (self, coded_char) :
-        if self.count >= 10 :
-            self.file.write ('\n')
-            self.count = 0
         if self.pause < 3 : self.pause = 3
         for i in coded_char :
             self.o_map [i](self)
@@ -128,6 +124,10 @@ class abc :
         if self.takt == self.taktcount :
             self.file.write ('| ')
             self.taktcount = 0
+            self.tcount += 1
+            if self.tcount > 5 :
+                self.file.write ('\n')
+                self.tcount = 0
 
     def _output_pause (self) :
         while (self.pause) :
