@@ -90,6 +90,7 @@ steps_bpm     = 12
 default_wpm   = 12
 default_title = 'quick brown fox'
 default_midi  = 74
+default_note  = 'a'
 
 class abc :
     def __init__ \
@@ -98,11 +99,13 @@ class abc :
         , wpm   = default_wpm
         , title = default_title
         , midi  = default_midi
+        , note  = default_note
         ) :
         self.file      = ofile
         self.wpm       = wpm
         self.title     = title
         self.midi      = midi
+        self.note      = note
         self.pause     = 5
         self.tcount    = 0
         self.takt      = 8 # M: 4/4
@@ -154,7 +157,7 @@ class abc :
 
     def _output_dit (self) :
         self._output_pause ()
-        self.file.write ('a ')
+        self.file.write ('%s ' % self.note)
         self.taktcount += 1
         self._output_takt ()
 
@@ -164,13 +167,13 @@ class abc :
         if l > self.takt - self.taktcount :
             l = self.takt - self.taktcount
         if l < length :
-            self.file.write ('a%d- ' % l)
+            self.file.write ('%s%d- ' % (self.note, l))
             self.taktcount += l
             self._output_takt ()
-            self.file.write ('a%d ' % (length - l))
+            self.file.write ('%s%d ' % (self.note, length - l))
             self.taktcount += (length - l)
         else :
-            self.file.write ('a3 ')
+            self.file.write ('%s3 ' % self.note)
             self.taktcount += l
         self._output_takt ()
     
@@ -205,6 +208,12 @@ if __name__ == '__main__' :
         , help    = "Midi instrument (patch/program) number"
         , type    = "int"
         , default = default_midi
+        )
+    cmd.add_option \
+        ( "-n", "--note"
+        , dest    = "note"
+        , help    = "Note to play in abc notation"
+        , default = default_note
         )
     cmd.add_option \
         ( "-t", "--title"
