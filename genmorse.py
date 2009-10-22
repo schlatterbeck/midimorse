@@ -89,12 +89,20 @@ bpm_wpm       =  5
 steps_bpm     = 12
 default_wpm   = 12
 default_title = 'quick brown fox'
+default_midi  = 74
 
 class abc :
-    def __init__ (self, ofile, wpm = default_wpm, title = default_title) :
+    def __init__ \
+        ( self
+        , ofile
+        , wpm   = default_wpm
+        , title = default_title
+        , midi  = default_midi
+        ) :
         self.file      = ofile
         self.wpm       = wpm
         self.title     = title
+        self.midi      = midi
         self.pause     = 5
         self.tcount    = 0
         self.takt      = 8 # M: 4/4
@@ -102,7 +110,7 @@ class abc :
         self.closed    = False
         self.file.write ('X: 1\nT: %s\nM: 4/4\nL: 1/8\n' % self.title)
         self.file.write ('Q: 1/8=%d\nK: C\n' % (self.wpm * bpm_wpm * steps_bpm))
-        self.file.write ("%%MIDI program 74\n")
+        self.file.write ("%%MIDI program %s\n" % self.midi)
     # end def __init__
 
     def update (self, str) :
@@ -172,6 +180,7 @@ class abc :
             self.pause = self.takt - self.taktcount
             self._output_pause ()
             self.file.write ('\n')
+            self.file.close ()
     # end def close
     __del__ = close
 
@@ -189,6 +198,13 @@ if __name__ == '__main__' :
         ( "-o", "--output"
         , dest    = "output"
         , help    = "Output File, default is stdout"
+        )
+    cmd.add_option \
+        ( "-m", "--midi"
+        , dest    = "midi"
+        , help    = "Midi instrument (patch/program) number"
+        , type    = "int"
+        , default = default_midi
         )
     cmd.add_option \
         ( "-t", "--title"
