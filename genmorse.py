@@ -1,7 +1,28 @@
 #!/usr/local/bin/python
+# -*- coding: iso-8859-1 -*-
+# Copyright (C) 2006-9 Dr. Ralf Schlatterbeck Open Source Consulting.
+# Reichergasse 131, A-3411 Weidling.
+# Web: http://www.runtux.com Email: office@runtux.com
+# All rights reserved
+# ****************************************************************************
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
 
 import sys
 import string
+from   optparse import OptionParser
 
 code = \
     { 'a'    : '.-'
@@ -64,18 +85,22 @@ code = \
     , '(sk)' : '..-.-'
 }
 
-bpm_wpm = 5
-steps_bpm = 12
+bpm_wpm       =  5
+steps_bpm     = 12
+default_wpm   = 12
+default_title = 'quick brown fox'
 
 class abc :
-    def __init__ (self, file, wpm) :
-        self.file      = file
+    def __init__ (self, ofile, wpm = default_wpm, title = default_title) :
+        self.file      = ofile
         self.wpm       = wpm
+        self.title     = title
         self.pause     = 5
         self.count     = 0
         self.takt      = 8 # M: 4/4
         self.taktcount = 0
-        self.file.write ('X: 1\nT: quick brown fox\nM: 4/4\nL: 1/8\n')
+        self.closed    = False
+        self.file.write ('X: 1\nT: %s\nM: 4/4\nL: 1/8\n' % self.title)
         self.file.write ('Q: 1/8=%d\nK: C\n' % (self.wpm * bpm_wpm * steps_bpm))
         self.file.write ("%%MIDI program 74\n")
     # end def __init__
@@ -140,15 +165,59 @@ class abc :
             self.file.write ('a3 ')
             self.taktcount += l
         self._output_takt ()
+    
+    def close (self) :
+        if not self.closed :
+            self.closed = True
+            self.pause = self.takt - self.taktcount
+            self._output_pause ()
+            self.file.write ('\n')
+    # end def close
+    __del__ = close
 
     o_map = { '.' : _output_dit, '-' : _output_dah }
 # end class abc
 
-file = sys.stdin
-if len (sys.argv) > 1 : file = open (sys.argv [1])
-str = "".join (file.readlines ())
+if __name__ == '__main__' :
+    cmd = OptionParser ()
+    cmd.add_option \
+        ( "-i", "--input"
+        , dest    = "input"
+        , help    = "Input File, default is stdin"
+        )
+    cmd.add_option \
+        ( "-o", "--output"
+        , dest    = "output"
+        , help    = "Output File, default is stdout"
+        )
+    cmd.add_option \
+        ( "-t", "--title"
+        , dest    = "title"
+        , help    = "Title of song, used for typesetting music"
+        , default = default_title
+        )
+    cmd.add_option \
+        ( "-w", "--wpm"
+        , dest    = "wpm"
+        , help    = "Speed in words per minute"
+        , type    = "int"
+        , default = default_wpm
+        )
+    (options, args) = cmd.parse_args ()
+    if len (args) > 0 :
+        cmd.print_help (sys.stderr)
+        sys.exit (42)
 
-ofile = sys.stdout
+    if options.input :
+        ifile = open (options.input)
+    else :
+        ifile = sys.stdin
+    if options.output :
+        ofile = open (options.output, "w")
+    else :
+        ofile = sys.stdout
 
-cw = abc (ofile, 12)
-cw.update (str)
+    str = "".join (ifile.readlines ())
+
+    cw = abc (ofile, options.wpm, options.title)
+    cw.update (str)
