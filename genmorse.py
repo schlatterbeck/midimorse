@@ -244,5 +244,11 @@ if __name__ == '__main__' :
 
     str = "".join (ifile.readlines ())
 
-    cw = abc (ofile, options.wpm, options.title)
+    cw = abc \
+        ( ofile
+        , wpm   = options.wpm
+        , title = options.title
+        , midi  = options.midi
+        , note  = options.note
+        )
     cw.update (str)
