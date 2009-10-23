@@ -116,7 +116,7 @@ code = \
 }
 
 bpm_wpm       =  5
-steps_bpm     = 12
+steps_bpm     = 10
 default_wpm   = 12
 default_title = 'quick brown fox'
 default_midi  = 74
@@ -136,7 +136,7 @@ class abc :
         self.title     = title
         self.midi      = midi
         self.note      = note
-        self.pause     = 5
+        self.pause     = 7
         self.tcount    = 0
         self.takt      = 8 # M: 4/4
         self.taktcount = 0
@@ -149,7 +149,7 @@ class abc :
     def update (self, str) :
         for i in string.lower (str) :
             if i in string.whitespace :
-                self.pause = 5
+                self.pause = 7
             if code.has_key (i) : 
                 self._output_char (code [i])
     # end def update
