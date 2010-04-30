@@ -115,33 +115,68 @@ code = \
     , '(sos)': '...---...' # SOS
 }
 
-bpm_wpm       =  5
-steps_bpm     = 10
-default_wpm   = 12
-default_title = 'quick brown fox'
-default_midi  = 74
-default_note  = 'a'
+bpm_wpm        =  5
+steps_bpm      = 10
+default_wpm    = 12
+default_title  = 'quick brown fox'
+default_midi   = 74
+default_note   = 'a'
+default_wpause = 7
 
 class abc :
+    """ Class for generating morse code in abc notation
+        Spacing: We use the word "paris" .-.- .- .-. .. ...
+        dot = "dit" = length 1, dash = "dah" = length 3
+        for intra-character pause with length = 1
+        and inter-character pause with length = 3
+        spacing at word boundary is counted as 7
+        which results in a word length
+        for paris of 1+1+3+1+1+1+3+3 +1+1+3+3 +1+1+3+1+1+3 +1+1+1+3
+        +1+1+1+1+1+7 = 50 and an average character length of 10 -- for
+        the 5 letter word paris. So we set the steps_bpm by default to 10
+        (10 unit-1 steps per character) and the bpm_wpm multiplier to 5
+        (5 characters per word). Comparing this to other morse code
+        samples that claim a certain speed seems to confirm this
+        formula.
+        For Farnsworth spacing (adding more pause to an otherwise faster
+        signal) we use a multiplier for the notes to get as close as
+        possible to the given pause speed. The farnsworth_wpm speed
+        needs to be higher than the given wpm speed. We use the
+        farnsworth speed for generating the characters and then add
+        enough pause to come down to the wmp speed.
+    """
     def __init__ \
         ( self
         , ofile
-        , wpm   = default_wpm
-        , title = default_title
-        , midi  = default_midi
-        , note  = default_note
+        , wpm            = default_wpm
+        , title          = default_title
+        , midi           = default_midi
+        , note           = default_note
+        , farnsworth_wpm = default_wpm
+        , wpause         = default_wpause
         ) :
-        self.file      = ofile
-        self.wpm       = wpm
-        self.title     = title
-        self.midi      = midi
-        self.note      = note
-        self.pause     = 7
-        self.tcount    = 0
-        self.takt      = 8 # M: 4/4
-        self.taktcount = 0
-        self.closed    = False
-        self.file.write ('X: 1\nT: %s\nM: 4/4\nL: 1/8\n' % self.title)
+        self.multiplier = 1
+        self.wpm        = wpm
+        self.fwpm       = farnsworth_wpm
+        if self.fwpm > self.wpm :
+            self.multiplier = 8
+        self.file       = ofile
+        self.title      = title
+        self.midi       = midi
+        self.note       = note
+        self.ditpause   = self.multiplier
+        self.dahpause   = 3 * self.multiplier
+        self.wpause     = wpause * self.multiplier
+        self.pause      = self.wpause
+        self.tcount     = 0
+        self.takt       = 8 * self.multiplier # M: 4/4
+        self.taktcount  = 0
+        self.closed     = False
+
+        self.file.write \
+            ('X: 1\nT: %s\nM: 4/4\nL: 1/%s\n'
+            % (self.title, 8 * self.multiplier)
+            )
         self.file.write ('Q: 1/8=%d\nK: C\n' % (self.wpm * bpm_wpm * steps_bpm))
         self.file.write ("%%%%MIDI program %s\n" % self.midi)
     # end def __init__
@@ -149,16 +184,16 @@ class abc :
     def update (self, str) :
         for i in string.lower (str) :
             if i in string.whitespace :
-                self.pause = 7
+                self.pause = self.wpause
             if code.has_key (i) : 
                 self._output_char (code [i])
     # end def update
 
     def _output_char (self, coded_char) :
-        if self.pause < 3 : self.pause = 3
+        if self.pause < self.dahpause : self.pause = self.dahpause
         for i in coded_char :
             self.o_map [i](self)
-            self.pause = 1
+            self.pause = self.ditpause
     # end def _output_char
 
     def _output_takt (self) :
@@ -170,6 +205,27 @@ class abc :
                 self.file.write ('\n')
                 self.tcount = 0
 
+    def _output_length (self, symbol, length, bind = 0) :
+        """ Output a symbol with length length.
+            bind: can be 0 (never) 1 (all but last) or 2 (all)
+        """
+        b1 = b2 = ''
+        if bind :
+            b1 = '-'
+        if bind > 1 :
+            b2 = '-'
+        for i in (32, 24, 16, 12, 8, 6, 4, 3, 2) :
+            while length >= i :
+                assert (length != 1)
+                b = b1
+                if length == i :
+                    b = b2
+                self.file.write ('%s%d%s ' % (symbol, i, b))
+                length -= i
+        if length :
+            self.file.write ('%s%s ' % (symbol, b2))
+    # end def _output_length
+
     def _output_pause (self) :
         while (self.pause) :
             pause = self.pause
@@ -177,33 +233,33 @@ class abc :
                 pause = self.takt - self.taktcount
             self.pause -= pause
             self.taktcount += pause
-            for i in (8, 6, 4, 3, 2) :
-                while pause >= i :
-                    self.file.write ('z%d ' % i)
-                    pause -= i
-            if pause :
-                self.file.write ('z ')
+            self._output_length ('z', pause)
             self._output_takt ()
 
     def _output_dit (self) :
         self._output_pause ()
-        self.file.write ('%s ' % self.note)
-        self.taktcount += 1
+        l = self.multiplier
+        if l == 1 :
+            mu = ''
+        else :
+            mu = self.multiplier
+        self.file.write ('%s%s ' % (self.note, mu))
+        self.taktcount += l
         self._output_takt ()
 
     def _output_dah (self) :
         self._output_pause ()
-        length = l = 3
+        length = l = 3 * self.multiplier
         if l > self.takt - self.taktcount :
             l = self.takt - self.taktcount
         if l < length :
-            self.file.write ('%s%d- ' % (self.note, l))
+            self._output_length (self.note, l, 2)
             self.taktcount += l
             self._output_takt ()
-            self.file.write ('%s%d ' % (self.note, length - l))
+            self._output_length (self.note, length - l, 1)
             self.taktcount += (length - l)
         else :
-            self.file.write ('%s3 ' % self.note)
+            self.file.write ('%s%s ' % (self.note, l))
             self.taktcount += l
         self._output_takt ()
     
