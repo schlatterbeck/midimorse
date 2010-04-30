@@ -8,7 +8,7 @@ quick.abc: genmorse.py
 paris.abc: genmorse.py
 	echo paris paris paris paris paris paris \
              paris paris paris paris paris paris \
-	   | genmorse.py -o paris.abc -t 'Paris' -n a
+	   | genmorse.py -o paris.abc -t 'Paris' -n a -f 20 -w 10
 
 %.ps: %.abc
 	abcm2ps -O $@ $<

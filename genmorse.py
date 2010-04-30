@@ -144,6 +144,33 @@ class abc :
         needs to be higher than the given wpm speed. We use the
         farnsworth speed for generating the characters and then add
         enough pause to come down to the wmp speed.
+
+        The following formula gives the timing of the pause per
+        character *in farnsworth_wpm* timing:
+
+         7       X    10
+        ---- + ---- = ---
+        fwpm   fwpm   wpm
+
+        fwpm stands for the faster farnsworth_wpm speed. Each character
+        has 10 units, we need to make longer pauses in farnsworth timing
+        to reach the same per-character speed in wpm. If wpm==fwpm, we
+        get the normal inter-character timing of 3 dots. For faster fwpm
+        we get larger X.
+
+        10 fwpm
+        ------- = 7 + X
+        wpm
+
+            10 fwpm 
+        X = ------- - 7
+            wpm
+
+        for fwpm = 20 and wpm = 10 we get
+
+        X = 20 - 7 = 13
+
+        X is measured in farnsworth-timing dits.
     """
     def __init__ \
         ( self
@@ -155,19 +182,22 @@ class abc :
         , farnsworth_wpm = default_wpm
         , wpause         = default_wpause
         ) :
-        self.multiplier = 1
+        self.multiplier = m = 1
         self.wpm        = wpm
         self.fwpm       = farnsworth_wpm
+        pause_add       = 0
+        if self.fwpm < self.wpm :
+            self.fwpm = self.wpm
         if self.fwpm > self.wpm :
-            self.multiplier = 8
+            self.multiplier = m = 8
+        self.ditpause   = self.multiplier
+        self.dahpause   = int ((m * 10 * self.fwpm + 0.5) / self.wpm - 7 * m)
+        self.wpause     = wpause * self.multiplier
+        self.pause      = self.wpause
         self.file       = ofile
         self.title      = title
         self.midi       = midi
         self.note       = note
-        self.ditpause   = self.multiplier
-        self.dahpause   = 3 * self.multiplier
-        self.wpause     = wpause * self.multiplier
-        self.pause      = self.wpause
         self.tcount     = 0
         self.takt       = 8 * self.multiplier # M: 4/4
         self.taktcount  = 0
@@ -177,7 +207,8 @@ class abc :
             ('X: 1\nT: %s\nM: 4/4\nL: 1/%s\n'
             % (self.title, 8 * self.multiplier)
             )
-        self.file.write ('Q: 1/8=%d\nK: C\n' % (self.wpm * bpm_wpm * steps_bpm))
+        self.file.write ('Q: 1/8=%d\n' % (self.fwpm * bpm_wpm * steps_bpm))
+        self.file.write ('K: C\n')
         self.file.write ("%%%%MIDI program %s\n" % self.midi)
     # end def __init__
 
@@ -214,7 +245,7 @@ class abc :
             b1 = '-'
         if bind > 1 :
             b2 = '-'
-        for i in (32, 24, 16, 12, 8, 6, 4, 3, 2) :
+        for i in (64, 48, 32, 24, 16, 12, 8, 6, 4, 3, 2) :
             while length >= i :
                 assert (length != 1)
                 b = b1
@@ -314,6 +345,13 @@ if __name__ == '__main__' :
         , type    = "int"
         , default = default_wpm
         )
+    cmd.add_option \
+        ( "-f", "--farnsworth-wpm"
+        , dest    = "fwpm"
+        , help    = "Farnsworth speed in words per minute"
+        , type    = "int"
+        , default = default_wpm
+        )
     (options, args) = cmd.parse_args ()
     if len (args) > 0 :
         cmd.print_help (sys.stderr)
@@ -332,9 +370,10 @@ if __name__ == '__main__' :
 
     cw = abc \
         ( ofile
-        , wpm   = options.wpm
-        , title = options.title
-        , midi  = options.midi
-        , note  = options.note
+        , wpm            = options.wpm
+        , title          = options.title
+        , midi           = options.midi
+        , note           = options.note
+        , farnsworth_wpm = options.fwpm
         )
     cw.update (str)
