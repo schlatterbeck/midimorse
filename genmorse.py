@@ -38,7 +38,7 @@ code = \
     , 'c'    : '-.-.'
     , 'ç'    : '-.-..'
     , 'Ç'    : '-.-..'
-    , 'ch'   : '----'
+    , '[ch]' : '----'
     , 'd'    : '-..'
     , 'e'    : '.'
     , 'è'    : '.-..-'
@@ -93,16 +93,16 @@ code = \
     , '!'    : '-.-.--'
     , '/'    : '-..-.'
     , '-'    : '-....-'
-    , '(ve)' : '...-.'    # Understood # Verstanden
-    , '(eb)' : '.-...'    # Wait
-    , '(sk)' : '...-.-'   # End of Work # Verkehrsende
-    # '(sk)' : '..-.-'    # probably wrong
+    , '[ve]' : '...-.'    # Understood # Verstanden
+    , '[eb]' : '.-...'    # Wait
+    , '[sk]' : '...-.-'   # End of Work # Verkehrsende
+    # '[sk]' : '..-.-'    # probably wrong
     , '&'    : '.-...'
-    , '(hh)' : '........' # Error # Fehler
-    , '(ka)' : '-.-.-'    # Spruchanfang
-    , '(ar)' : '.-.-.'    # Starting Signal # Spruchende (sic)
+    , '[hh]' : '........' # Error # Fehler
+    , '[ka]' : '-.-.-'    # Spruchanfang
+    , '[ar]' : '.-.-.'    # Starting Signal # Spruchende (sic)
     , '+'    : '.-.-.'
-    , '(bt)' : '-...-'    # Pause
+    , '[bt]' : '-...-'    # Pause
     , '='    : '-...-'
     , '('    : '-.--.'
     , ')'    : '-.--.-'
@@ -112,7 +112,7 @@ code = \
     , '_'    : '..--.-'
     , '$'    : '...-..-'
     , '@'    : '.--.-.'
-    , '(sos)': '...---...' # SOS
+    , '[sos]': '...---...' # SOS
 }
 
 bpm_wpm        =  5
@@ -121,7 +121,6 @@ default_wpm    = 12
 default_title  = 'quick brown fox'
 default_midi   = 74
 default_note   = 'a'
-default_wpause = 7
 
 class abc :
     """ Class for generating morse code in abc notation
@@ -146,31 +145,35 @@ class abc :
         enough pause to come down to the wmp speed.
 
         The following formula gives the timing of the pause per
-        character *in farnsworth_wpm* timing:
+        character *in farnsworth_wpm* timing -- C is the inter-character
+        timing, W is the inter-word timing.
 
-         7       X    10
-        ---- + ---- = ---
-        fwpm   fwpm   wpm
+         31     4C     W     50
+        ---- + ---- + ---- = ---
+        fwpm   fwpm   fwpm   wpm
+
+        50 fwpm         19             50 fwpm        19
+        ------- - 31 =  -- C           ------- - 31 = -- W
+          wpm            3              wpm            7
+
+        For solving this, we need the timing for C and W:
+
+              3
+         C  = - W
+              7
+
+        solved for C and W we get:
+
+        150 * fwpm   93             350 * fwpm     217
+        ---------- - --  = C        ----------  -  ---  = W
+         19 * wpm    19              19 * wpm      19
 
         fwpm stands for the faster farnsworth_wpm speed. Each character
         has 10 units, we need to make longer pauses in farnsworth timing
         to reach the same per-character speed in wpm. If wpm==fwpm, we
-        get the normal inter-character timing of 3 dots. For faster fwpm
-        we get larger X.
-
-        10 fwpm
-        ------- = 7 + X
-        wpm
-
-            10 fwpm 
-        X = ------- - 7
-            wpm
-
-        for fwpm = 20 and wpm = 10 we get
-
-        X = 20 - 7 = 13
-
-        X is measured in farnsworth-timing dits.
+        get the normal inter-character timing of 3 dits and inter-word
+        spacing of 7 dits. For faster fwpm we get larger C and W.
+        C and W are measured in farnsworth-timing dits.
     """
     def __init__ \
         ( self
@@ -180,7 +183,6 @@ class abc :
         , midi           = default_midi
         , note           = default_note
         , farnsworth_wpm = default_wpm
-        , wpause         = default_wpause
         ) :
         self.multiplier = m = 1
         self.wpm        = wpm
@@ -191,8 +193,10 @@ class abc :
         if self.fwpm > self.wpm :
             self.multiplier = m = 8
         self.ditpause   = self.multiplier
-        self.dahpause   = int ((m * 10 * self.fwpm + 0.5) / self.wpm - 7 * m)
-        self.wpause     = wpause * self.multiplier
+        self.dahpause   = int \
+            ((m * 150. * self.fwpm) / (19. * self.wpm) -  93. * m / 19. + 0.5)
+        self.wpause     = int \
+            ((m * 350. * self.fwpm) / (19. * self.wpm) - 217. * m / 19. + 0.5)
         self.pause      = self.wpause
         self.file       = ofile
         self.title      = title
@@ -238,6 +242,7 @@ class abc :
 
     def _output_length (self, symbol, length, bind = 0) :
         """ Output a symbol with length length.
+            Precondition: Symbol does not cross next takt boundary
             bind: can be 0 (never) 1 (all but last) or 2 (all)
         """
         b1 = b2 = ''
@@ -257,42 +262,33 @@ class abc :
             self.file.write ('%s%s ' % (symbol, b2))
     # end def _output_length
 
+    def _output_symbol (self, symbol, length, bind = False) :
+        """ Output a symbol with length length.
+            Symbol might cross next takt boundary
+        """
+        while length > self.takt - self.taktcount :
+            l = self.takt - self.taktcount
+            length         -= l
+            self.taktcount += l
+            self._output_length (symbol, l, 2 * bind)
+            self._output_takt   ()
+        if length :
+            self.taktcount += length
+            self._output_length (symbol, length, bind)
+            self._output_takt   ()
+    # end def _output_symbol
+
     def _output_pause (self) :
-        while (self.pause) :
-            pause = self.pause
-            if pause > self.takt - self.taktcount :
-                pause = self.takt - self.taktcount
-            self.pause -= pause
-            self.taktcount += pause
-            self._output_length ('z', pause)
-            self._output_takt ()
+        self._output_symbol ('z', self.pause)
+        self.pause = 0
 
     def _output_dit (self) :
-        self._output_pause ()
-        l = self.multiplier
-        if l == 1 :
-            mu = ''
-        else :
-            mu = self.multiplier
-        self.file.write ('%s%s ' % (self.note, mu))
-        self.taktcount += l
-        self._output_takt ()
+        self._output_pause  ()
+        self._output_symbol (self.note, self.multiplier, True)
 
     def _output_dah (self) :
         self._output_pause ()
-        length = l = 3 * self.multiplier
-        if l > self.takt - self.taktcount :
-            l = self.takt - self.taktcount
-        if l < length :
-            self._output_length (self.note, l, 2)
-            self.taktcount += l
-            self._output_takt ()
-            self._output_length (self.note, length - l, 1)
-            self.taktcount += (length - l)
-        else :
-            self.file.write ('%s%s ' % (self.note, l))
-            self.taktcount += l
-        self._output_takt ()
+        self._output_symbol (self.note, 3 * self.multiplier, True)
     
     def close (self) :
         if not self.closed :
