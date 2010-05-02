@@ -16,5 +16,8 @@ paris.abc: genmorse.py
 %.mid: %.abc
 	abc2midi $< -o $@
 
+%.abc: %.txt
+	cat $< | genmorse.py -o $@ -t '$@' -n a -f 20 -w 12
+
 clean:
 	rm -f quick.ps quick.mid quick.abc paris.abc paris.mid paris.ps
