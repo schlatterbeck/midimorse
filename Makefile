@@ -1,3 +1,10 @@
+FWPM=20
+WPM=10
+MIDI=26
+
+#MIDI=26
+#MIDI=1319
+#MIDI=74
 
 all: quick.ps quick.mid paris.ps paris.mid
 
@@ -17,7 +24,7 @@ paris.abc: genmorse.py
 	abc2midi $< -o $@
 
 %.abc: %.txt
-	cat $< | genmorse.py -o $@ -t '$@' -n a -f 20 -w 12
+	cat $< | genmorse.py -o $@ -t '$@' -n a -f $(FWPM) -w $(WPM) -m $(MIDI)
 
 clean:
 	rm -f quick.ps quick.mid quick.abc paris.abc paris.mid paris.ps

@@ -28,6 +28,7 @@ class Random_Word (object) :
 # end class Random_Word
 
 if __name__ == "__main__" :
+    import sys
     cmd = OptionParser ()
     cmd.add_option \
         ( "-c", "--charset"
@@ -63,12 +64,22 @@ if __name__ == "__main__" :
         , type    = "int"
         , default = None
         )
+    cmd.add_option \
+        ( "-v", "--vvv"
+        , dest    = "vvv"
+        , help    = "send vvv before start"
+        , default = False
+        , action  = "store_true"
+        )
     (opt, args) = cmd.parse_args ()
     if len (args) > 0 :
         cmd.print_help (sys.stderr)
         sys.exit (42)
 
+    if opt.vvv :
+        print "vvv "
     rw = Random_Word (opt.charset, opt.minlen, opt.maxlen, opt.randseed)
+    print ''
     for n, r in enumerate (rw) :
         print r,
         if n + 1 == opt.nwords :
