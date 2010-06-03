@@ -1,5 +1,5 @@
 #!/bin/sh
-randword.py -m2 -M7 -c'KMURESNAPTLWI.JZ=FOY,VG5/Q92H3' -n 6 --vvv > t.txt
+randword.py -m2 -M7 -c'KMURESNAPTLWI.JZ=FOY,VG5/Q92H38' -n 6 --vvv > t.txt
 #%%MIDI program 26
 #%%MIDI program 1319
 #%%MIDI program 74
