@@ -1,8 +1,11 @@
 #!/bin/sh
-randword.py -m2 -M7 -c'KMURESNAPTLWI.JZ=FOY,VG5/Q92H38B?4' -n 6 --vvv > t.txt
+#randword.py -m2 -M7 -c'KMURESNAPTLWI.JZ=FOY,VG5/Q92H38B?47C1D60X' -n 6 --vvv > t.txt
+echo vvv > t.txt
+QSO | head -4 | tail -2 >> t.txt
+
 #%%MIDI program 26
 #%%MIDI program 1319
 #%%MIDI program 74
-make FWPM=20 WPM=10 t.mid
+make FWPM=16 WPM=10 N=A t.mid
 
 #timidity -EFreverb=d,0 t.mid
