@@ -14,3 +14,7 @@
 .#*
 .*.swp
 .DS_store
+*.abc
+*.ps
+*.pdf
+*.mid
