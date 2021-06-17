@@ -1,6 +1,6 @@
-#!/usr/bin/python
-# -*- coding: iso-8859-1 -*-
-# Copyright (C) 2006-9 Dr. Ralf Schlatterbeck Open Source Consulting.
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# Copyright (C) 2006-21 Dr. Ralf Schlatterbeck Open Source Consulting.
 # Reichergasse 131, A-3411 Weidling.
 # Web: http://www.runtux.com Email: office@runtux.com
 # All rights reserved
@@ -19,32 +19,31 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-
 import sys
 import string
-from   optparse import OptionParser
+from   argparse import ArgumentParser
 
 code = \
     { 'a'    : '.-'
-    , 'ä'    : '.-.-'
-    , 'Ä'    : '.-.-'
-    , 'æ'    : '.-.-'
-    , 'Æ'    : '.-.-'
-    , 'å'    : '.--.-'
-    , 'Å'    : '.--.-'
-    , 'à'    : '.--.-'
-    , 'À'    : '.--.-'
+    , 'Ã¤'    : '.-.-'
+    , 'Ã„'    : '.-.-'
+    , 'Ã¦'    : '.-.-'
+    , 'Ã†'    : '.-.-'
+    , 'Ã¥'    : '.--.-'
+    , 'Ã…'    : '.--.-'
+    , 'Ã '    : '.--.-'
+    , 'Ã€'    : '.--.-'
     , 'b'    : '-...'
     , 'c'    : '-.-.'
-    , 'ç'    : '-.-..'
-    , 'Ç'    : '-.-..'
+    , 'Ã§'    : '-.-..'
+    , 'Ã‡'    : '-.-..'
     , '[ch]' : '----'
     , 'd'    : '-..'
     , 'e'    : '.'
-    , 'è'    : '.-..-'
-    , 'È'    : '.-..-'
-    , 'é'    : '..-..'
-    , 'É'    : '..-..'
+    , 'Ã¨'    : '.-..-'
+    , 'Ãˆ'    : '.-..-'
+    , 'Ã©'    : '..-..'
+    , 'Ã‰'    : '..-..'
     , 'f'    : '..-.'
     , 'g'    : '--.'
     , 'h'    : '....'
@@ -54,28 +53,28 @@ code = \
     , 'l'    : '.-..'
     , 'm'    : '--'
     , 'n'    : '-.'
-    , 'ñ'    : '--.--'
-    , 'Ñ'    : '--.--'
+    , 'Ã±'    : '--.--'
+    , 'Ã‘'    : '--.--'
     , 'o'    : '---'
-    , 'ö'    : '---.'
-    , 'Ö'    : '---.'
+    , 'Ã¶'    : '---.'
+    , 'Ã–'    : '---.'
     , 'p'    : '.--.'
     , 'q'    : '--.-'
     , 'r'    : '.-.'
     , 's'    : '...'
-    , 'ß'    : '...--.'
+    , 'ÃŸ'    : '...--.'
     , 't'    : '-'
     , 'u'    : '..-'
-    , 'ü'    : '..--'
-    , 'Ü'    : '..--'
-    , 'ð'    : '..--.'
+    , 'Ã¼'    : '..--'
+    , 'Ãœ'    : '..--'
+    , 'Ã°'    : '..--.'
     , 'v'    : '...-'
     , 'w'    : '.--'
     , 'x'    : '-..-'
     , 'y'    : '-.--'
     , 'z'    : '--..'
-    , 'þ'    : '.--..'
-    , 'Þ'    : '.--..'
+    , 'Ã¾'    : '.--..'
+    , 'Ãž'    : '.--..'
     , '1'    : '.----'
     , '2'    : '..---'
     , '3'    : '...--'
@@ -217,10 +216,10 @@ class abc :
     # end def __init__
 
     def update (self, str) :
-        for i in string.lower (str) :
+        for i in str.lower () :
             if i in string.whitespace :
                 self.pause = self.wpause
-            if code.has_key (i) : 
+            if i in code : 
                 self._output_char (code [i])
     # end def update
 
@@ -304,61 +303,58 @@ class abc :
 # end class abc
 
 if __name__ == '__main__' :
-    cmd = OptionParser ()
-    cmd.add_option \
+    cmd = ArgumentParser ()
+    cmd.add_argument \
         ( "-i", "--input"
         , dest    = "input"
         , help    = "Input File, default is stdin"
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-o", "--output"
         , dest    = "output"
         , help    = "Output File, default is stdout"
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-m", "--midi"
         , dest    = "midi"
         , help    = "Midi instrument (patch/program) number"
-        , type    = "int"
+        , type    = int
         , default = default_midi
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-n", "--note"
         , dest    = "note"
         , help    = "Note to play in abc notation"
         , default = default_note
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-t", "--title"
         , dest    = "title"
         , help    = "Title of song, used for typesetting music"
         , default = default_title
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-w", "--wpm"
         , dest    = "wpm"
         , help    = "Speed in words per minute"
-        , type    = "int"
+        , type    = int
         , default = default_wpm
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-f", "--farnsworth-wpm"
         , dest    = "fwpm"
         , help    = "Farnsworth speed in words per minute"
-        , type    = "int"
+        , type    = int
         , default = default_wpm
         )
-    (options, args) = cmd.parse_args ()
-    if len (args) > 0 :
-        cmd.print_help (sys.stderr)
-        sys.exit (42)
+    args = cmd.parse_args ()
 
-    if options.input :
-        ifile = open (options.input)
+    if args.input :
+        ifile = open (args.input)
     else :
         ifile = sys.stdin
-    if options.output :
-        ofile = open (options.output, "w")
+    if args.output :
+        ofile = open (args.output, "w")
     else :
         ofile = sys.stdout
 
@@ -366,10 +362,10 @@ if __name__ == '__main__' :
 
     cw = abc \
         ( ofile
-        , wpm            = options.wpm
-        , title          = options.title
-        , midi           = options.midi
-        , note           = options.note
-        , farnsworth_wpm = options.fwpm
+        , wpm            = args.wpm
+        , title          = args.title
+        , midi           = args.midi
+        , note           = args.note
+        , farnsworth_wpm = args.fwpm
         )
     cw.update (str)

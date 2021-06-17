@@ -1,7 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
+from __future__ import print_function
 from random   import seed, choice, randint
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 
 class Random_Word (object) :
@@ -21,7 +22,7 @@ class Random_Word (object) :
         while True :
             l = randint (self.minlen, self.maxlen)
             r = []
-            for k in xrange (l) :
+            for k in range (l) :
                 r.append (choice (self.charset))
             yield ''.join (r)
     # end def __iter__
@@ -29,59 +30,55 @@ class Random_Word (object) :
 
 if __name__ == "__main__" :
     import sys
-    cmd = OptionParser ()
-    cmd.add_option \
+    cmd = ArgumentParser ()
+    cmd.add_argument \
         ( "-c", "--charset"
         , dest    = "charset"
         , help    = "charset from which to chose the words"
-        , default = ''.join (chr (x) for x in xrange (ord ('a'), ord ('z') + 1))
+        , default = ''.join (chr (x) for x in range (ord ('a'), ord ('z') + 1))
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-m", "--minlen"
         , dest    = "minlen"
         , help    = "Minimum length for a word"
-        , type    = "int"
+        , type    = int
         , default = 2
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-M", "--maxlen"
         , dest    = "maxlen"
         , help    = "Maximum length for a word"
-        , type    = "int"
+        , type    = int
         , default = 7
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-n", "--nwords"
         , dest    = "nwords"
         , help    = "Number of words to generate"
-        , type    = "int"
+        , type    = int
         , default = 5
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-r", "--randseed"
         , dest    = "randseed"
         , help    = "random seed"
-        , type    = "int"
-        , default = None
+        , type    = int
         )
-    cmd.add_option \
+    cmd.add_argument \
         ( "-v", "--vvv"
         , dest    = "vvv"
         , help    = "send vvv before start"
         , default = False
         , action  = "store_true"
         )
-    (opt, args) = cmd.parse_args ()
-    if len (args) > 0 :
-        cmd.print_help (sys.stderr)
-        sys.exit (42)
+    args = cmd.parse_args ()
 
-    if opt.vvv :
-        print "vvv "
-    rw = Random_Word (opt.charset, opt.minlen, opt.maxlen, opt.randseed)
-    print ''
+    if args.vvv :
+        print ("vvv ")
+    rw = Random_Word (args.charset, args.minlen, args.maxlen, args.randseed)
+    print ('')
     for n, r in enumerate (rw) :
-        print r,
-        if n + 1 == opt.nwords :
+        print (r, end = ' ')
+        if n + 1 == args.nwords :
             break
-    print
+    print ()
